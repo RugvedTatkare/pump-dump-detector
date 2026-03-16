@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PumpSentinel — Crypto Manipulation Detector</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+
+  <!-- ── HEADER ──────────────────────────────────────────────── -->
+  <header>
+    <div class="header-inner">
+      <div class="logo">
+        <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+          <polygon points="11,1 21,6.5 21,15.5 11,21 1,15.5 1,6.5" stroke="#00ff88" stroke-width="1.4" fill="none"/>
+          <polygon points="11,5 17,8.5 17,13.5 11,17 5,13.5 5,8.5" stroke="#00ff88" stroke-width="0.8" fill="rgba(0,255,136,0.06)"/>
+        </svg>
+        <span>PUMP<span class="logo-accent">SENTINEL</span></span>
+      </div>
+      <div class="header-center">
+        <span class="ticker-item" id="hdr-coin">— / USD</span>
+        <span class="ticker-sep">|</span>
+        <span class="ticker-item" id="hdr-price">——</span>
+        <span class="ticker-sep">|</span>
+        <span class="ticker-item" id="hdr-risk">AWAITING</span>
+      </div>
+      <div class="header-right">
+        <span class="live-dot"></span>
+        <span id="status-text" class="status-text">IDLE</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── MAIN LAYOUT ─────────────────────────────────────────── -->
+  <div class="app-layout">
+
+    <!-- LEFT SIDEBAR -->
+    <aside class="sidebar">
+      <!-- Coin Selector -->
+      <div class="sidebar-block">
+        <div class="block-label">MARKET</div>
+        <div class="coin-list">
+          <button class="coin-row active" data-coin="BTC"><span class="cr-sym">BTC</span><span class="cr-name">Bitcoin</span></button>
+          <button class="coin-row" data-coin="ETH"><span class="cr-sym">ETH</span><span class="cr-name">Ethereum</span></button>
+          <button class="coin-row" data-coin="SOL"><span class="cr-sym">SOL</span><span class="cr-name">Solana</span></button>
+          <button class="coin-row" data-coin="DOGE"><span class="cr-sym">DOGE</span><span class="cr-name">Dogecoin</span></button>
+          <button class="coin-row" data-coin="SHIB"><span class="cr-sym">SHIB</span><span class="cr-name">Shiba Inu</span></button>
+          <button class="coin-row" data-coin="PEPE"><span class="cr-sym">PEPE</span><span class="cr-name">Pepe</span></button>
+          <button class="coin-row" data-coin="ADA"><span class="cr-sym">ADA</span><span class="cr-name">Cardano</span></button>
+          <button class="coin-row" data-coin="XRP"><span class="cr-sym">XRP</span><span class="cr-name">Ripple</span></button>
+        </div>
+      </div>
+
+      <!-- Time Range -->
+      <div class="sidebar-block">
+        <div class="block-label">TIMEFRAME</div>
+        <div class="range-btns">
+          <button class="range-btn" data-days="1">1D</button>
+          <button class="range-btn active" data-days="7">7D</button>
+          <button class="range-btn" data-days="30">30D</button>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="sidebar-block">
+        <button id="analyze-btn" class="btn-run">
+          <span id="btn-text">▶ RUN ANALYSIS</span>
+          <span id="btn-spinner" class="spinner hidden"></span>
+        </button>
+        <button id="simulate-btn" class="btn-sim">⚡ SIMULATE PUMP</button>
+      </div>
+
+      <!-- Signal Indicators -->
+      <div class="sidebar-block">
+        <div class="block-label">SIGNALS</div>
+        <div class="signal-list">
+          <div class="signal-row">
+            <span class="sig-label">Jump Event</span>
+            <span class="sig-val" id="sig-jump">—</span>
+          </div>
+          <div class="signal-row">
+            <span class="sig-label">Vol. Spike</span>
+            <span class="sig-val" id="sig-vol">—</span>
+          </div>
+          <div class="signal-row">
+            <span class="sig-label">Regime</span>
+            <span class="sig-val" id="sig-regime">—</span>
+          </div>
+          <div class="signal-row">
+            <span class="sig-label">Z-Score</span>
+            <span class="sig-val" id="sig-z">—</span>
+          </div>
+          <div class="signal-row">
+            <span class="sig-label">Jump λ</span>
+            <span class="sig-val" id="sig-lambda">—</span>
+          </div>
+          <div class="signal-row">
+            <span class="sig-label">Data pts</span>
+            <span class="sig-val" id="sig-pts">—</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- CENTER CONTENT -->
+    <main class="main-content">
+
+      <!-- TOP ROW: Score + Components -->
+      <div class="top-row">
+
+        <!-- Big Score -->
+        <div class="score-card" id="main-score-card">
+          <div class="score-ring-wrap">
+            <svg class="score-ring" viewBox="0 0 120 120">
+              <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="8"/>
+              <circle id="ring-circle" cx="60" cy="60" r="50" fill="none" stroke="#00ff88" stroke-width="8"
+                stroke-dasharray="314" stroke-dashoffset="314"
+                stroke-linecap="round" transform="rotate(-90 60 60)"
+                style="transition: stroke-dashoffset 1s cubic-bezier(0.4,0,0.2,1), stroke 0.4s"/>
+            </svg>
+            <div class="score-inner">
+              <div class="score-pct" id="score-value">--</div>
+              <div class="score-lbl">PUMP PROB</div>
+            </div>
+          </div>
+          <div class="risk-badge" id="risk-badge">AWAITING DATA</div>
+          <div class="score-coin" id="score-symbol">— / USD</div>
+          <div class="score-changes">
+            <div class="change-item">
+              <span class="change-lbl">1H</span>
+              <span class="change-val" id="met-1h">—</span>
+            </div>
+            <div class="change-divider"></div>
+            <div class="change-item">
+              <span class="change-lbl">24H</span>
+              <span class="change-val" id="met-24h">—</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Component Breakdown -->
+        <div class="components-panel">
+          <div class="panel-label">MODEL BREAKDOWN</div>
+          <div class="comp-row" id="comp-rw">
+            <div class="comp-info">
+              <span class="comp-name">Random Walk</span>
+              <span class="comp-desc">GBM z-score deviation</span>
+            </div>
+            <div class="comp-right">
+              <div class="comp-track"><div class="comp-fill" id="bar-rw"></div></div>
+              <span class="comp-pct" id="val-rw">—</span>
+            </div>
+          </div>
+          <div class="comp-row" id="comp-hmm">
+            <div class="comp-info">
+              <span class="comp-name">HMM Regime</span>
+              <span class="comp-desc">Pump state posterior</span>
+            </div>
+            <div class="comp-right">
+              <div class="comp-track"><div class="comp-fill" id="bar-hmm"></div></div>
+              <span class="comp-pct" id="val-hmm">—</span>
+            </div>
+          </div>
+          <div class="comp-row" id="comp-pj">
+            <div class="comp-info">
+              <span class="comp-name">Poisson Jumps</span>
+              <span class="comp-desc">Jump intensity + direction</span>
+            </div>
+            <div class="comp-right">
+              <div class="comp-track"><div class="comp-fill" id="bar-pj"></div></div>
+              <span class="comp-pct" id="val-pj">—</span>
+            </div>
+          </div>
+          <div class="comp-row" id="comp-vol">
+            <div class="comp-info">
+              <span class="comp-name">Volume Anomaly</span>
+              <span class="comp-desc">Current vs baseline ratio</span>
+            </div>
+            <div class="comp-right">
+              <div class="comp-track"><div class="comp-fill" id="bar-vol"></div></div>
+              <span class="comp-pct" id="val-vol">—</span>
+            </div>
+          </div>
+
+          <!-- Regime State Probabilities -->
+          <div class="regime-section">
+            <div class="panel-label" style="margin-bottom:10px">REGIME STATES</div>
+            <div class="regime-bars">
+              <div class="regime-item">
+                <span class="regime-name">Normal</span>
+                <div class="regime-track"><div class="regime-fill normal" id="regime-normal"></div></div>
+                <span class="regime-pct" id="regime-normal-pct">—</span>
+              </div>
+              <div class="regime-item">
+                <span class="regime-name">Trending</span>
+                <div class="regime-track"><div class="regime-fill trending" id="regime-trend"></div></div>
+                <span class="regime-pct" id="regime-trend-pct">—</span>
+              </div>
+              <div class="regime-item">
+                <span class="regime-name">Pump</span>
+                <div class="regime-track"><div class="regime-fill pump" id="regime-pump"></div></div>
+                <span class="regime-pct" id="regime-pump-pct">—</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CHART AREA -->
+      <div class="chart-panel">
+        <div class="chart-header">
+          <div class="chart-title" id="chart-title">— PRICE & PUMP PROBABILITY TIMELINE</div>
+          <div class="chart-tabs">
+            <button class="chart-tab active" data-chart="timeline">Timeline</button>
+            <button class="chart-tab" data-chart="components">Components</button>
+          </div>
+          <div class="chart-legend">
+            <span class="leg"><span class="leg-line price-line"></span>Price</span>
+            <span class="leg"><span class="leg-line prob-line"></span>Pump Prob</span>
+          </div>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="main-chart"></canvas>
+          <canvas id="comp-chart" class="hidden"></canvas>
+        </div>
+      </div>
+
+      <!-- ALERTS -->
+      <div class="alerts-panel">
+        <div class="alerts-header">
+          <div class="panel-label">ALERT LOG</div>
+          <div class="alerts-stats">
+            <span class="stat-pill critical" id="stat-critical">CRIT 0</span>
+            <span class="stat-pill high" id="stat-high">HIGH 0</span>
+            <span class="stat-pill medium" id="stat-medium">MED 0</span>
+          </div>
+          <button id="refresh-alerts-btn" class="btn-icon" title="Refresh">↺</button>
+        </div>
+        <div id="alerts-list" class="alerts-list">
+          <div class="empty-state">No alerts generated — risk must reach MEDIUM or above to trigger an alert.</div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
+
