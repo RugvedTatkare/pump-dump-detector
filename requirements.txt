@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+numpy
+scipy
+pandas
+requests
+hmmlearn
+scikit-learn
+python-dotenv
+httpx
